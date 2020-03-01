@@ -40,7 +40,8 @@ class ResBase(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), slef.dim)
+        x = x.view(x.size(0), self.dim)
+        return x
 
 class ResClassifier(nn.Module):
     def __init__(self, num_classes=12,num_layer = 3,num_unit=2048,prob=0.5,middle=1000):
@@ -82,15 +83,6 @@ class ResClassifier(nn.Module):
         return x
 
 # 领域判别器 Domain Discriminator
-class ConvBlock(nn.Sequential):
-    def __init__(self, in_channel, out_channel, ker_size, padd, stride):
-        super(ConvBlock,self).__init__()
-        self.add_module('conv',nn.Conv2d(in_channel ,out_channel,kernel_size=ker_size,stride=stride,padding=padd)),
-        self.add_module('norm',nn.BatchNorm2d(out_channel)),
-        self.add_module('LeakyRelu',nn.LeakyReLU(0.2, inplace=True))
-
-
-
 
 class DomainDiscriminator(nn.Module):
 
