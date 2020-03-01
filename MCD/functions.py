@@ -29,6 +29,8 @@ def post_config(opt):
     
     #输出文件
     opt.dir2save = generate_dir2save(opt)
+    opt.class_names = generate_class_names(opt)
+    opt.num_classes = generate_num_classes(opt)
     return opt
 
 def generate_dir2save(opt):
@@ -54,6 +56,12 @@ def generate_class_names(opt):
                 "motorcycle","person","plant","skateboard","train","truck"]
 
     return ""
+
+def generate_num_classes(opt):
+    if opt.dataset=="visda"
+        return 12
+    elif
+        raise NotImplementedError
 
 def save_networks(net_G,net_F1, net_F2, opt):
     torch.save(net_G, '%s/netG.pth' % (opt.dir2save))

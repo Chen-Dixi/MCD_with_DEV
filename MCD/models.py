@@ -82,9 +82,40 @@ class ResClassifier(nn.Module):
         return x
 
 # 领域判别器 Domain Discriminator
+class ConvBlock(nn.Sequential):
+    def __init__(self, in_channel, out_channel, ker_size, padd, stride):
+        super(ConvBlock,self).__init__()
+        self.add_module('conv',nn.Conv2d(in_channel ,out_channel,kernel_size=ker_size,stride=stride,padding=padd)),
+        self.add_module('norm',nn.BatchNorm2d(out_channel)),
+        self.add_module('LeakyRelu',nn.LeakyReLU(0.2, inplace=True))
+
+
+
 
 class DomainDiscriminator(nn.Module):
-    def __init__(self,opt,feature_dim=2048):
+
+    def __init__(self,opt):
+        super(DomainDiscriminator, self).__init__()
+        self.in_dim = 2048
+        if opt.net=='resnet18':
+            self.in_dim = 512
+
+        # self.fc1 = nn.Linear(50 * 4 * 4, 100)
+        # self.bn1 = nn.BatchNorm1d(100)
+        # self.fc2 = nn.Linear(100, 2)
+        self.fc1 = nn.Linear(self.dim, 100)
+        # one nerve cell
+        self.fc2 = nn.Linear(100, 1)
+
+    def forward(self, x):
+        # input = GradientReversalLayer.grad_reverse(input, lambda_p)
+        # logits = F.relu(self.bn1(self.fc1(input)))
+        # logits = F.log_softmax(self.fc2(logits), 1)
+        logits = F.relu(self.fc1(x))
+        logits = torch.sigmoid(self.fc2(x))
+
+        return logits
+
 
 
 

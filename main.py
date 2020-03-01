@@ -90,7 +90,7 @@ ce_criterion = nn.CrossEntropy()
 
 accMetric = AccCalculatorForEveryClass( opt.num_classes )
 accMetric.set_classes_name(opt.class_names)
-accMetric.set_best_method(best_method='mean_acc_overclasses')
+accMetric.set_best_method(best_method='total_acc')
 accMetric.set_header_info()
 
 for epoch in range(1,opt.epochs+1):
