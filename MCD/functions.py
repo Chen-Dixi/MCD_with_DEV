@@ -1,6 +1,7 @@
 import torch
 import random
 import numpy as np 
+import os
 
 def print_dict(args):
     
@@ -34,7 +35,7 @@ def post_config(opt):
     return opt
 
 def generate_dir2save(opt):
-    dir2save = "TrainedModel/%s/num_k=%d/%d" % (opt.net, opt.num_k, opt.build)
+    dir2save = "TrainedModel/%s/num_k=%d" % (opt.net, opt.num_k)
     return dir2save
 
 def prepare_dir2save_folder(dir2save):
@@ -58,9 +59,9 @@ def generate_class_names(opt):
     return ""
 
 def generate_num_classes(opt):
-    if opt.dataset=="visda"
+    if opt.dataset=="visda":
         return 12
-    elif
+    else:
         raise NotImplementedError
 
 def save_networks(net_G,net_F1, net_F2, opt):
