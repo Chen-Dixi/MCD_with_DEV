@@ -183,14 +183,18 @@ def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
             optimizer_g.step()
 
 
-    loss_info = {'src_loss':epoch_src_loss,'entropy_loss':epoch_entropy_loss,'discrepancy_loss':epoch_discrepancy_loss}
-    functions.print_dict(loss_info)
+    
+    
+    
+    print("src_loss: %f" %epoch_src_loss)
+    print("entropy_loss : %f" % epoch_entropy_loss)
+    print("discrepancy_loss : %f" % epoch_discrepancy_loss)
 
 
 best_acc_total = 0.0
 
 def test(G, F1, F2):
-    global acc_total
+    global best_acc_total
     G.eval()
     F1.eval()
     F2.eval()
@@ -210,6 +214,7 @@ def test(G, F1, F2):
     is_best = acc_total > best_acc_total
     best_acc_total = max(acc_total,best_acc_total)
 
+    print("Test accuracy: %.4f %" % acc_total)
     dixiF.save_checkpoint({
             'best_acc_total': best_acc_total,
             'acc_total':acc_tota,
@@ -219,10 +224,11 @@ def test(G, F1, F2):
         }, is_best, opt.dir2save,filename='checkpoint.pth.tar')
 
 try:
-    for epoch in range(1,opt.epochs+1):
+    for epoch in range(1,2):#opt.epochs+1):
         train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
         if epcoh % opt.test_interver == 0:
             test(G,F1,F2)
+        
         accMetric.step(epoch)
 
 except KeyboardInterrupt:
