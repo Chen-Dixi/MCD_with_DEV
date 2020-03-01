@@ -79,7 +79,7 @@ class PairedDatasetHelper(object):
         return 'UnalignedDataLoader'
 
     def load_data(self):
-        return self.paired_data
+        return self.paired_dataLoader
 
     def __len__(self):
         return min(max(len(self.dataset_A), len(self.dataset_B)), self.max_dataset_size)
