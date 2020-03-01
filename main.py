@@ -20,7 +20,7 @@ from dixitool.pytorch.module import functional as dixiF
 # other package
 import random
 from tqdm import tqdm
-
+import os
 
 
 
@@ -42,9 +42,9 @@ parser.add_argument('--num-layer', type=int, default=3, metavar='K',
 #设置，所以叫option
 opt = parser.parse_args()
 
-opt=functions.post_config(opt) #给args加一些 argparse加不了的东西
+opt=functions.post_config(opt) #给opt加一些 argparse加不了的东西
 opt.class_names = functions.generate_class_names(opt)
-functions.print_config(opt) #打印 parser.parse_args()里面的东西
+functions.print_config(opt) #打印 parser.parse_opt()里面的东西
 #===== 创建用来保存模型的文件夹
 functions.prepare_dir2save_folder(opt.dir2save)
 
@@ -76,31 +76,26 @@ train_dataLoader = datasets_helper.load_data()
 test_dataLoader = DataLoader(realistic_dataset,batch_size=opt.batch_size,shuffle=False)#没有
 
 # 模型，一个G，两个个F
-G = ResBase(opt.net)
-F1 = ResClassifier(num_layer=num_layer)
-F2 = ResClassifier(num_layer=num_layer)
+G = ResBase(opt.net).to(opt.device)
+F1 = ResClassifier(num_layer=opt.num_layer).to(opt.device)
+F2 = ResClassifier(num_layer=opt.num_layer).to(opt.device)
 F1.apply(weights_init)
 F2.apply(weights_init)
+
 # 优化器Optimizer
 # 暂时提供SGD
-optimizer_g = optim.SGD(G.features.parameters(), lr=args.lr,weight_decay=0.0005)
-optimizer_f = optim.SGD([{'params':F1.parameters()},{'params':F2.parameters()}],momentum=args.momentum,lr=args.lr,weight_decay=0.0005)
+optimizer_g = optim.SGD(G.features.parameters(), lr=opt.lr,weight_decay=0.0005)
+optimizer_f = optim.SGD([{'params':F1.parameters()},{'params':F2.parameters()}],momentum=opt.momentum,lr=opt.lr,weight_decay=0.0005)
 
-ce_criterion = nn.CrossEntropy()
+ce_criterion = nn.CrossEntropyLoss()
 
 accMetric = AccCalculatorForEveryClass( opt.num_classes )
 accMetric.set_classes_name(opt.class_names)
 accMetric.set_best_method(best_method='total_acc')
 accMetric.set_header_info()
 
-for epoch in range(1,opt.epochs+1):
-    train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
-    if epcoh % opt.test_interver == 0:
-        test(G,F1,F2)
-        
-
 def discrepancy( out1, out2):
-        return torch.mean(torch.abs(F.softmax(out1) - F.softmax(out2)))
+        return torch.mean(torch.abs(F.softmax(out1,dim=1) - F.softmax(out2,dim=1)))
 
 
 def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
@@ -111,6 +106,15 @@ def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
     epoch_src_loss = 0.0
     epoch_entropy_loss = 0.0
     epoch_discrepancy_loss = 0.0
+
+    batch = next(iter(train_dataLoader))
+    src_data, src_target = batch['s'], batch['s_target']
+    tgt_data, tgt_target = batch['t'], batch['t_target']
+
+    src_data, src_target = src_data.to(opt.device), src_target.to(opt.device)
+    tgt_data, tgt_target = tgt_data.to(opt.device), tgt_target.to(opt.device)
+
+    
 
     for idx , batch in enumerate(tqdm(train_dataLoader)):
         src_data, src_target = batch['s'], batch['s_target']
@@ -128,8 +132,8 @@ def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
         t_output2 = F2(t_feature)
 
         # stepA
-        entropy_loss = - torch.mean(torch.log(torch.mean(F.softmax(t_output1),0)+1e-6))
-        entropy_loss -= torch.mean(torch.log(torch.mean(F.softmax(t_output2),0)+1e-6))
+        entropy_loss = - torch.mean(torch.log(torch.mean(F.softmax(t_output1,dim=1),0)+1e-6))
+        entropy_loss -= torch.mean(torch.log(torch.mean(F.softmax(t_output2,dim=1),0)+1e-6))
 
         s_loss1 = ce_criterion( s_output1, src_target)
         s_loss2 = ce_criterion( s_output2, src_target)
@@ -155,12 +159,12 @@ def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
         s_loss1 = ce_criterion( s_output1, src_target)
         s_loss2 = ce_criterion( s_output2, src_target)
 
-        entropy_loss = - torch.mean(torch.log(torch.mean(F.softmax(t_output1),0)+1e-6))
-        entropy_loss -= torch.mean(torch.log(torch.mean(F.softmax(t_output2),0)+1e-6))
+        entropy_loss = - torch.mean(torch.log(torch.mean(F.softmax(t_output1,dim=1),dim=0)+1e-6))
+        entropy_loss -= torch.mean(torch.log(torch.mean(F.softmax(t_output2,dim=1),dim=0)+1e-6))
         loss_dis = discrepancy(t_output1,t_output2)
         loss = s_loss1 + s_loss2 + 0.01*entropy_loss - 1.0*loss_dis
 
-        loss_backward()
+        loss.backward()
         optimizer_f.step()
 
         epoch_src_loss += (s_loss1.item()+s_loss2.item())     
@@ -191,26 +195,43 @@ def test(G, F1, F2):
     F1.eval()
     F2.eval()
 
-    for idx, batch in enumerate(tqdm(test_dataLoader)):
-        v_data, v_target = functions.batch2data(batch, opt.device)
+    accMetric.reset()
+    with torch.no_grad():
+        for idx, batch in enumerate(tqdm(test_dataLoader)):
+            v_data, v_target = functions.batch2data(batch, opt.device)
+        
+            feature = G(v_data)
+            output1 = F1(feature)
+            output2 = F2(feature)
+            accMetric.update(output1,v_target)
+            accMetric.update(output2,v_target)
+
+    acc_total = accMetric.get()
+    is_best = acc_total > best_acc_total
+    best_acc_total = max(acc_total,best_acc_total)
+
+    dixiF.save_checkpoint({
+            'best_acc_total': best_acc_total,
+            'acc_total':acc_tota,
+            'netG':G,
+            'netF1':F1,
+            'netF2':F2,
+        }, is_best, opt.dir2save,filename='checkpoint.pth.tar')
+
+try:
+    for epoch in range(1,opt.epochs+1):
+        train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
+        if epcoh % opt.test_interver == 0:
+            test(G,F1,F2)
+        accMetric.step(epoch)
+
+except KeyboardInterrupt:
+    print("error")
     
-        feature = G(v_data)
-        output1 = F1(feature)
-        output2 = F2(feature)
-        accMetric.update(output1,v_target)
-        accMetric.update(output2,v_target)
+else:
+    print("finish")
+    
 
-        acc_total = accMetric.get()
-        is_best = acc_total > best_acc_total
-        best_acc_total = max(acc_total,best_acc_total)
-
-        dixiF.save_checkpoint({
-                'best_acc_total': best_acc_total,
-                'acc_total':acc_tota,
-                'netG':G,
-                'netF1':F1,
-                'netF2':F2,
-            }, is_best, opt.dir2save,filename='checkpoint.pth.tar')
 
 
         
