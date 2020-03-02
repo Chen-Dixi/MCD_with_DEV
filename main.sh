@@ -2,11 +2,11 @@ train_path='/home/chendixi/Datasets/VisDA2017/train/image_list.txt'
 validation_path='/home/chendixi/Datasets/VisDA2017/validation/image_list.txt'
 dataset_prefix='/home/chendixi/Datasets/VisDA2017'
 dataset='visda'
-num_k=(1 2 3 4 5)
-epochs=8
+num_k=(3 4 5)
+epochs=4
 test_interval=1
 
-for((index=0; index<5; index++))
+for((index=0; index<3; index++))
 do
     echo "training task : num_k = ${num_k[index]}"
 

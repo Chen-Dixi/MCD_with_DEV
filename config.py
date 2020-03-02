@@ -45,3 +45,4 @@ def get_inference_arguments():
                         help='which network alex,vgg,res?')
 
     return parser
+

@@ -214,22 +214,23 @@ def test(G, F1, F2):
     is_best = acc_total > best_acc_total
     best_acc_total = max(acc_total,best_acc_total)
 
-    print("Test accuracy: %.4f %" % acc_total)
+    print("Test accuracy: {:.4f}%".format(acc_total))
     dixiF.save_checkpoint({
             'best_acc_total': best_acc_total,
-            'acc_total':acc_tota,
+            'acc_total':acc_total,
             'netG':G,
             'netF1':F1,
             'netF2':F2,
         }, is_best, opt.dir2save,filename='checkpoint.pth.tar')
 
 try:
-    for epoch in range(1,2):#opt.epochs+1):
+    for epoch in range(1,opt.epochs+1):
         train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
-        if epcoh % opt.test_interver == 0:
+        if epoch % opt.test_interval == 0:
             test(G,F1,F2)
         
         accMetric.step(epoch)
+
 
 except KeyboardInterrupt:
     print("error")
