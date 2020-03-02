@@ -42,11 +42,11 @@ if __name__ == '__main__':
 
     parse = get_train_arguments()
     parse.add_argument('--ndf',type=int,default=64)
-    parser.add_argument('--validation-path', type=str, default='/home/chendixi/Datasets/VisDA2017/validation/image_list.txt',required=True,
+    parse.add_argument('--validation-path', type=str, default='/home/chendixi/Datasets/VisDA2017/validation/image_list.txt',
                             help='image_list.txt of validation split')
-    parser.add_argument('--test-path', type=str, default='/home/chendixi/Datasets/VisDA2017/test/image_list_label.txt',required=True,
+    parse.add_argument('--test-path', type=str, default='/home/chendixi/Datasets/VisDA2017/test/image_list_label.txt',
                             help='image_list.txt of test split')   
-    parser.add_argument('--dataset-prefix',type=str,default='/home/chendixi/Datasets/VisDA2017',help="prefix for dataset list file if needed")                     
+    parse.add_argument('--dataset-prefix',type=str,default='/home/chendixi/Datasets/VisDA2017',help="prefix for dataset list file if needed")                     
 
     
 
@@ -63,8 +63,8 @@ if __name__ == '__main__':
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
-    validation_dataset = ImageList(opt.validation_path, os.path.join(dataset_prefix,'validation'), transform=transform)
-    test_dataset = ImageList(opt.test_path, os.path.join(dataset_prefix,'test'), transform=transform)
+    validation_dataset = ImageList(opt.validation_path, os.path.join(opt.dataset_prefix,'validation'), transform=transform)
+    test_dataset = ImageList(opt.test_path, os.path.join(opt.dataset_prefix,'test'), transform=transform)
 
     datasets_helper = PairedDatasetHelper(validation_dataset,test_dataset,opt.batch_size,shuffle=False)
     train_dataLoader = datasets_helper.load_data()
@@ -85,8 +85,9 @@ if __name__ == '__main__':
             tgt_data = tgt_data.to(opt.device)
 
             optimizer.zero_grad()
+
             out = netD(src_data).view(-1) # (batch,)
-            label = torch.full((src_data.size(0),), 1, device=device)
+            label = torch.full((src_data.size(0),), 1, device=opt.device)
             err_validation = criterion(out, label)
             err_validation.backward()
 
@@ -94,7 +95,7 @@ if __name__ == '__main__':
 
             out = netD(tgt_data).view(-1)
 
-            label = torch.full((tgt_data.size(0),), 0, device=device)
+            label = torch.full((tgt_data.size(0),), 0, device=opt.device)
             err_test = criterion(out, label)
             err_test.backward()
 

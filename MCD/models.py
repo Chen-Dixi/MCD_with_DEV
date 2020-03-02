@@ -5,6 +5,7 @@ from torchvision import models
 
 # pytorch
 import torch.nn as nn
+import torch
 import torch.nn.functional as F
 def weights_init(m):
     classname = m.__class__.__name__
@@ -112,7 +113,7 @@ class ConvBlock(nn.Sequential):
     def __init__(self, in_channels, out_channels, ker_size = 4, stride=2,padding=1 ):
         super(ConvBlock,self).__init__()
         self.add_module("conv", nn.Conv2d(in_channels, out_channels,ker_size,stride,padding))
-        sefl.add_module("norm", nn.BatchNorm2d(out_channels))
+        self.add_module("norm", nn.BatchNorm2d(out_channels))
         self.add_module('LeakyReLU', nn.LeakyReLU(0.2,inplace=True))
 
 
@@ -120,7 +121,7 @@ class DomainDiscriminator(nn.Module):
 
     # 图片输入 input is (3) x 224 x 224
     def __init__(self, in_channels=3, ndf=64):
-        
+        super(DomainDiscriminator, self).__init__()
         N = int(ndf)
         self.head = ConvBlock(in_channels, N) 
         self.body = nn.Sequential()
@@ -132,11 +133,11 @@ class DomainDiscriminator(nn.Module):
 
         self.tail = ConvBlock(max(32,N),1,7,stride=1,padding=0)
 
-    def forward(x):
+    def forward(self,x):
         x = self.head(x) # 224 x 224
         x = self.body(x) # 7 x 7
         x = self.tail(x) # 1 x 1  size(size(0),1,1,1)
-        x = F.sigmoid(x)
+        x = torch.sigmoid(x)
         x = x.view(x.size(0), -1)
         return x
 
