@@ -5,7 +5,7 @@ from torchvision import models
 
 # pytorch
 import torch.nn as nn
-
+import torch.nn.functional as F
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -83,30 +83,65 @@ class ResClassifier(nn.Module):
         return x
 
 # 领域判别器 Domain Discriminator
+# 用卷积来下采样
+
+# class DomainDiscriminator(nn.Module):
+
+#     def __init__(self,opt):
+#         super(DomainDiscriminator, self).__init__()
+#         self.in_dim = 2048
+#         if opt.net=='resnet18':
+#             self.in_dim = 512
+
+#         # self.fc1 = nn.Linear(50 * 4 * 4, 100)
+#         # self.bn1 = nn.BatchNorm1d(100)
+#         # self.fc2 = nn.Linear(100, 2)
+#         self.fc1 = nn.Linear(self.dim, 100)
+#         # one nerve cell
+#         self.fc2 = nn.Linear(100, 1)
+
+#     def forward(self, x):
+#         # input = GradientReversalLayer.grad_reverse(input, lambda_p)
+#         # logits = F.relu(self.bn1(self.fc1(input)))
+#         # logits = F.log_softmax(self.fc2(logits), 1)
+#         logits = F.relu(self.fc1(x))
+#         logits = torch.sigmoid(self.fc2(x))
+
+#         return logits
+class ConvBlock(nn.Sequential):
+    def __init__(self, in_channels, out_channels, ker_size = 4, stride=2,padding=1 ):
+        super(ConvBlock,self).__init__()
+        self.add_module("conv", nn.Conv2d(in_channels, out_channels,ker_size,stride,padding))
+        sefl.add_module("norm", nn.BatchNorm2d(out_channels))
+        self.add_module('LeakyReLU', nn.LeakyReLU(0.2,inplace=True))
+
 
 class DomainDiscriminator(nn.Module):
 
-    def __init__(self,opt):
-        super(DomainDiscriminator, self).__init__()
-        self.in_dim = 2048
-        if opt.net=='resnet18':
-            self.in_dim = 512
+    # 图片输入 input is (3) x 224 x 224
+    def __init__(self, in_channels=3, ndf=64):
+        
+        N = int(ndf)
+        self.head = ConvBlock(in_channels, N) 
+        self.body = nn.Sequential()
+        
+        for i in range(4):
+            N=int(ndf/pow(2,(i+1)))
+            block = ConvBlock(max(32,2*N),max(32,N))
+            self.body.add_module("block%d"%(i+1),block)
 
-        # self.fc1 = nn.Linear(50 * 4 * 4, 100)
-        # self.bn1 = nn.BatchNorm1d(100)
-        # self.fc2 = nn.Linear(100, 2)
-        self.fc1 = nn.Linear(self.dim, 100)
-        # one nerve cell
-        self.fc2 = nn.Linear(100, 1)
+        self.tail = ConvBlock(max(32,N),1,7,stride=1,padding=0)
 
-    def forward(self, x):
-        # input = GradientReversalLayer.grad_reverse(input, lambda_p)
-        # logits = F.relu(self.bn1(self.fc1(input)))
-        # logits = F.log_softmax(self.fc2(logits), 1)
-        logits = F.relu(self.fc1(x))
-        logits = torch.sigmoid(self.fc2(x))
+    def forward(x):
+        x = self.head(x) # 224 x 224
+        x = self.body(x) # 7 x 7
+        x = self.tail(x) # 1 x 1  size(size(0),1,1,1)
+        x = F.sigmoid(x)
+        x = x.view(x.size(0), -1)
+        return x
 
-        return logits
+        
+
 
 
 
