@@ -1,6 +1,13 @@
 # MCD_with_DEV
 Implementation of Model Selection for Domain Adpatation 
 
+# Required
+- python3.6
+- pytorch 1.2.0
+- [dixi](github.com/chen-dixi/dixitool)
+- tqdm
+- numpy
+
 # Intro
 
 在VisDA2017数据集，Maximum Classifier Discrepancy模型上实现DEV模型选择方法，
