@@ -1,10 +1,10 @@
 # MCD_with_DEV
-Implementation of Model Selection for Domain Adpatation 
+Implementation of Deep Embedded Validation for Domain Adpatation on visda2017dataset with MCD model
 
 # Required
 - python3.6
 - pytorch 1.2.0
-- [dixi](github.com/chen-dixi/dixitool)
+- [dixitool](github.com/chen-dixi/dixitool)
 - tqdm
 - numpy
 
