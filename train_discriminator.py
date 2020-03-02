@@ -16,6 +16,7 @@ import torch.nn as nn
 import random
 import numpy as np
 from tqdm import tqdm
+import os
 # --lr 0.0005
 
 
@@ -51,6 +52,8 @@ if __name__ == '__main__':
 
     opt = parse.parse_args()
     opt = post_config(opt)
+
+    functions.prepare_dir2save_folder(opt.dir2save)
 
 
     transform = transforms.Compose([
