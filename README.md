@@ -1,5 +1,5 @@
 # MCD_with_DEV
-Implementation of Deep Embedded Validation for Domain Adpatation on visda2017dataset with MCD model
+Implementation of Deep Embedded Validation for Domain Adpatation on visda2017 dataset with [MCD](https://github.com/mil-tokyo/MCD_DA) model
 
 # Required
 - python3.6
