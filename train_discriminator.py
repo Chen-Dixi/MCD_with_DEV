@@ -5,7 +5,7 @@ from MCD.models import DomainDiscriminator
 import MCD.functions as functions
 #dixitool
 from dixitool.pytorch.datasets import ImageList
-
+from dixitool.metric import AccCalculatorForEveryClass
 #torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
@@ -38,6 +38,32 @@ def post_config(opt):
         opt.dir2save = "TrainedModel/netD"
         return opt
 
+def test(netD, train_dataLoader,opt):
+    accMetric = AccCalculatorForEveryClass(2)
+    netD.eval()
+    accMetric.reset()
+    with torch.no_grad():
+        for idx, batch in enumerate(tqdm(train_dataLoader)):
+            src_data = batch['s'] # validation
+            tgt_data = batch['t'] # test
+
+            src_data = src_data.to(opt.device)
+            tgt_data = tgt_data.to(opt.device)
+            src_target = torch.full((src_data.size(0),), 1, device=opt.device)
+            tgt_target = torch.full((tgt_data.size(0),), 0, device=opt.device)
+            
+
+            out = netD(src_data) # (batch,)
+            
+            accMetric.update(out,src_target,binary_sigmoided=True)
+
+            out = netD(tgt_data)
+            accMetric.update(out,tgt_target,binary_sigmoided=True)
+
+    acc = accMetric.get()
+    print("判断准确率：{:.2f}%".format(acc))
+
+
 if __name__ == '__main__':
 
     parse = get_train_arguments()
@@ -47,12 +73,12 @@ if __name__ == '__main__':
     parse.add_argument('--test-path', type=str, default='/home/chendixi/Datasets/VisDA2017/test/image_list_label.txt',
                             help='image_list.txt of test split')   
     parse.add_argument('--dataset-prefix',type=str,default='/home/chendixi/Datasets/VisDA2017',help="prefix for dataset list file if needed")                     
-
+    parse.add_argument('--netD',type=str,default='')
     
 
     opt = parse.parse_args()
     opt = post_config(opt)
-
+    functions.print_config(opt)
     functions.prepare_dir2save_folder(opt.dir2save)
 
 
@@ -75,6 +101,12 @@ if __name__ == '__main__':
 
     criterion = nn.BCELoss()
     
+    if opt.netD != '':
+        netD.load_state_dict(torch.load(opt.netD))
+        test(netD, train_dataLoader,opt)
+        print("Test Over")
+        exit(0)
+    netD.train()
     for epoch in range(1,opt.epochs+1):
         train_loss = 0.0
         for idx, batch in enumerate(tqdm(train_dataLoader)):
