@@ -3,7 +3,7 @@ validation_path='/home/chendixi/Datasets/VisDA2017/validation/image_list.txt'
 dataset_prefix='/home/chendixi/Datasets/VisDA2017'
 dataset='visda'
 num_k=(3 4 5)
-epochs=4
+epochs=2
 test_interval=1
 
 for((index=0; index<3; index++))

@@ -28,7 +28,7 @@ def discrepancy( out1, out2):
         return torch.mean(torch.abs(F.softmax(out1,dim=1) - F.softmax(out2,dim=1)))
 
 
-def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
+def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt,ce_criterion):
     G.train()
     F1.train()
     F2.train()
@@ -228,7 +228,7 @@ if __name__ == '__main__':
 
     try:
         for epoch in range(1,opt.epochs+1):
-            train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
+            train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt,ce_criterion)
             if epoch % opt.test_interval == 0:
                 test(G,F1,F2,test_dataLoader,accMetric)
             
