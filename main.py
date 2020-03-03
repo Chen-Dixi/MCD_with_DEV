@@ -123,7 +123,7 @@ def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt,ce_criterion):
 
 best_acc_total = 0.0
 
-def test(G, F1, F2, test_dataLoader, accMetric):
+def test(G, F1, F2, test_dataLoader, accMetric,opt):
     global best_acc_total
     G.eval()
     F1.eval()
@@ -230,7 +230,7 @@ if __name__ == '__main__':
         for epoch in range(1,opt.epochs+1):
             train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt,ce_criterion)
             if epoch % opt.test_interval == 0:
-                test(G,F1,F2,test_dataLoader,accMetric)
+                test(G,F1,F2,test_dataLoader,accMetric,opt)
             
             accMetric.step(epoch)
 
