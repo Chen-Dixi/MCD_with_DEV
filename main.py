@@ -24,76 +24,6 @@ import os
 
 
 
-
-#都可以用的就放里面，在另外定制的加外面
-parser = get_train_arguments()
-#get_train_arguments里面就放必要的arguments
-#接下来 parser里面可以加一些别的东西
-#parser.add_argument('--checkpoint-file-name', default='step2checkpoint.pth.tar', type=str, metavar='checkpoint-file-name',
-#  help='name for checkpoint files') #只给文件名，一般后面的处理都会在path前面加一个checkpoints文件夹
-parser.add_argument('--num-k', type=int, default=4, metavar='K',help='how many steps to repeat the generator update')
-parser.add_argument('--dataset-prefix',type=str,default='',help="prefix for dataset list file if needed") #/User/chendixi/Datasets/VisDA2017/
-parser.add_argument('--train-path', type=str, default=None, metavar='B',required=True,
-                        help='image_list.txt of train split')
-parser.add_argument('--validation-path', type=str, default=None,required=True,
-                        help='image_list.txt of validation split')
-parser.add_argument('--num-layer', type=int, default=3, metavar='K',
-                        help='how many layers for classifier')
-#设置，所以叫option
-opt = parser.parse_args()
-
-opt=functions.post_config(opt) #给opt加一些 argparse加不了的东西
-opt.class_names = functions.generate_class_names(opt)
-functions.print_config(opt) #打印 parser.parse_opt()里面的东西
-#===== 创建用来保存模型的文件夹
-functions.prepare_dir2save_folder(opt.dir2save)
-
-data_transforms = {
-    "train": transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomHorizontalFlip(),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    "val": transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomHorizontalFlip(),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
-
-## dataset
-synthetic_dataset = ImageList(opt.train_path,os.path.join(opt.dataset_prefix,'train'), transform=data_transforms["train"])
-realistic_dataset = ImageList(opt.validation_path, os.path.join(opt.dataset_prefix,'validation'), transform=data_transforms["val"])
-
-datasets_helper = PairedDatasetHelper(synthetic_dataset,realistic_dataset,opt.batch_size,shuffle=True) #可以有len
-# this dataloader contain 'train' split and 'validation' split
-train_dataLoader = datasets_helper.load_data()
-
-test_dataLoader = DataLoader(realistic_dataset,batch_size=opt.batch_size,shuffle=False)#没有
-
-# 模型，一个G，两个个F
-G = ResBase(opt.net).to(opt.device)
-F1 = ResClassifier(num_layer=opt.num_layer).to(opt.device)
-F2 = ResClassifier(num_layer=opt.num_layer).to(opt.device)
-F1.apply(weights_init)
-F2.apply(weights_init)
-
-# 优化器Optimizer
-# 暂时提供SGD
-optimizer_g = optim.SGD(G.features.parameters(), lr=opt.lr,weight_decay=0.0005)
-optimizer_f = optim.SGD([{'params':F1.parameters()},{'params':F2.parameters()}],momentum=opt.momentum,lr=opt.lr,weight_decay=0.0005)
-
-ce_criterion = nn.CrossEntropyLoss()
-
-accMetric = AccCalculatorForEveryClass( opt.num_classes )
-accMetric.set_classes_name(opt.class_names)
-accMetric.set_best_method(best_method='total_acc')
-accMetric.set_header_info()
-
 def discrepancy( out1, out2):
         return torch.mean(torch.abs(F.softmax(out1,dim=1) - F.softmax(out2,dim=1)))
 
@@ -193,7 +123,7 @@ def train(G,F1,F2, optimizer_g, optimizer_f, train_dataLoader,opt):
 
 best_acc_total = 0.0
 
-def test(G, F1, F2):
+def test(G, F1, F2, test_dataLoader, accMetric):
     global best_acc_total
     G.eval()
     F1.eval()
@@ -218,26 +148,99 @@ def test(G, F1, F2):
     dixiF.save_checkpoint({
             'best_acc_total': best_acc_total,
             'acc_total':acc_total,
-            'netG':G,
-            'netF1':F1,
-            'netF2':F2,
+            'netG':G.state_dict(),
+            'netF1':F1.state_dict(),
+            'netF2':F2.state_dict(),
         }, is_best, opt.dir2save,filename='checkpoint.pth.tar')
 
-try:
-    for epoch in range(1,opt.epochs+1):
-        train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
-        if epoch % opt.test_interval == 0:
-            test(G,F1,F2)
+
+
+if __name__ == '__main__':
+    
+    #都可以用的就放里面，在另外定制的加外面
+    parser = get_train_arguments()
+    #get_train_arguments里面就放必要的arguments
+    #接下来 parser里面可以加一些别的东西
+    #parser.add_argument('--checkpoint-file-name', default='step2checkpoint.pth.tar', type=str, metavar='checkpoint-file-name',
+    #  help='name for checkpoint files') #只给文件名，一般后面的处理都会在path前面加一个checkpoints文件夹
+    parser.add_argument('--num-k', type=int, default=4, metavar='K',help='how many steps to repeat the generator update')
+    parser.add_argument('--dataset-prefix',type=str,default='',help="prefix for dataset list file if needed") #/User/chendixi/Datasets/VisDA2017/
+    parser.add_argument('--train-path', type=str, default=None, metavar='B',required=True,
+                            help='image_list.txt of train split')
+    parser.add_argument('--validation-path', type=str, default=None,required=True,
+                            help='image_list.txt of validation split')
+    parser.add_argument('--num-layer', type=int, default=3, metavar='K',
+                            help='how many layers for classifier')
+    #设置，所以叫option
+    opt = parser.parse_args()
+
+    opt=functions.post_config(opt) #给opt加一些 argparse加不了的东西
+    opt.class_names = functions.generate_class_names(opt)
+    functions.print_config(opt) #打印 parser.parse_opt()里面的东西
+    #===== 创建用来保存模型的文件夹
+    functions.prepare_dir2save_folder(opt.dir2save)
+
+    data_transforms = {
+        "train": transforms.Compose([
+            transforms.Resize(256),
+            transforms.RandomHorizontalFlip(),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        "val": transforms.Compose([
+            transforms.Resize(256),
+            transforms.RandomHorizontalFlip(),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+    }
+
+    ## dataset
+    synthetic_dataset = ImageList(opt.train_path,os.path.join(opt.dataset_prefix,'train'), transform=data_transforms["train"])
+    realistic_dataset = ImageList(opt.validation_path, os.path.join(opt.dataset_prefix,'validation'), transform=data_transforms["val"])
+
+    datasets_helper = PairedDatasetHelper(synthetic_dataset,realistic_dataset,opt.batch_size,shuffle=True) #可以有len
+    # this dataloader contain 'train' split and 'validation' split
+    train_dataLoader = datasets_helper.load_data()
+
+    test_dataLoader = DataLoader(realistic_dataset,batch_size=opt.batch_size,shuffle=False)#没有
+
+    # 模型，一个G，两个个F
+    G = ResBase(opt.net).to(opt.device)
+    F1 = ResClassifier(num_layer=opt.num_layer).to(opt.device)
+    F2 = ResClassifier(num_layer=opt.num_layer).to(opt.device)
+    F1.apply(weights_init)
+    F2.apply(weights_init)
+
+    # 优化器Optimizer
+    # 暂时提供SGD
+    optimizer_g = optim.SGD(G.features.parameters(), lr=opt.lr,weight_decay=0.0005)
+    optimizer_f = optim.SGD([{'params':F1.parameters()},{'params':F2.parameters()}],momentum=opt.momentum,lr=opt.lr,weight_decay=0.0005)
+
+    ce_criterion = nn.CrossEntropyLoss()
+
+    accMetric = AccCalculatorForEveryClass( opt.num_classes )
+    accMetric.set_classes_name(opt.class_names)
+    accMetric.set_best_method(best_method='total_acc')
+    accMetric.set_header_info()
+
+    try:
+        for epoch in range(1,opt.epochs+1):
+            train(G,F1,F2, optimizer_g, optimizer_f,train_dataLoader ,opt)
+            if epoch % opt.test_interval == 0:
+                test(G,F1,F2,test_dataLoader,accMetric)
+            
+            accMetric.step(epoch)
+
+
+    except KeyboardInterrupt:
+        print("error")
         
-        accMetric.step(epoch)
-
-
-except KeyboardInterrupt:
-    print("error")
-    
-else:
-    print("finish")
-    
+    else:
+        print("finish")
+        
 
 
 
