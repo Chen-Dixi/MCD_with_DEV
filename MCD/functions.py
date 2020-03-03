@@ -73,3 +73,14 @@ def batch2data(batch, device):
 
     data, target = batch
     return data.to(device), target.to(device)
+
+def load_from_checkpoint(checkpoint_file, *keys):
+
+    if not os.path.exists(checkpoint_file):
+        raise FileNotFoundError("{} not found".format(checkpoint_file))
+
+    results = []
+    checkpoint = torch.load(checkpoint_file)
+    for key in keys:
+        results.append(checkpoint[key])
+    return results
