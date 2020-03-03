@@ -137,7 +137,7 @@ class DomainDiscriminator(nn.Module):
         x = self.head(x) # 224 x 224
         x = self.body(x) # 7 x 7
         x = self.tail(x) # 1 x 1  size(size(0),1,1,1)
-        x = torch.sigmoid(x)
+        #x = torch.sigmoid(x)
         x = x.view(x.size(0), -1)
         return x
 
