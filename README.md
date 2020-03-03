@@ -1,5 +1,5 @@
 # MCD_with_DEV
-Implementation of Deep Embedded Validation for Domain Adpatation on visda2017 dataset with [MCD](https://github.com/mil-tokyo/MCD_DA) model
+Implementation of Deep Embedded Validation for Domain Adpatation on [visda2017](https://github.com/VisionLearningGroup/taskcv-2017-public/tree/master/classification) dataset with [MCD](https://github.com/mil-tokyo/MCD_DA) model
 
 # Required
 - python3.6
@@ -18,7 +18,7 @@ DEV中的density ratio通过训练一个输出probability scalar的预判别器 
 </div>
 
 只是在深度DomainAdaptation模型上 对DEV进行粗略的实现，计算论文中的无偏估计
-- 训练出MCD模型，在`main.sh`里调整超参，把data-patah修改自己的数据集路径
+- 训练出MCD模型，在`main.sh`里调整超参，把数据集的路径修改为自己的
 ```bash
 bash main.sh
 ```
