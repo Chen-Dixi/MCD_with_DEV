@@ -100,10 +100,10 @@ if __name__ == '__main__':
     dicts = functions.load_from_checkpoint(opt.checkpoint_path,'netG','netF1','netF2')
     # 加载所有模型参数
     netD.load_state_dict(torch.load(opt.netD))
-    #netG.load_state_dict(dicts[0])
-    # 分类器就使用F1
-    #F1.load_state_dict(dicts[1])
-    #F2.module.load_state_dict(dicts[2])
+    netG.load_state_dict(dicts[0])
+    #分类器就使用F1
+    F1.load_state_dict(dicts[1])
+    F2.module.load_state_dict(dicts[2])
 
     ce_criterion = nn.CrossEntropyLoss(reduction='none')
     L = np.empty(0,dtype=np.float32)
