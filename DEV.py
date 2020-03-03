@@ -139,10 +139,10 @@ if __name__ == '__main__':
     cov = np.cov(np.concatenate((L, W),axis = 1 ), rowvar=False)[0][1] 
     #ddof=1 provides an unbiased estimator of the variance of a hypothetical infinite population.
     #ddof=0 provides a maximum likelihood estimate of the variance for normally distributed variables.
-    var = np.var(density_ratio, ddof=1) 
+    var = np.var(W, ddof=1) 
 
     eta = - cov / var
-    err_dev = err_iwcv + eta*np.mean(density_ratio) - eta
+    err_dev = np.mean(L) + eta*np.mean(W) - eta
 
     print("本次测试针对test split 的 Deep Embedded Validation Target无偏估计是{:f}".format(err_dev))
 
