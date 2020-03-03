@@ -12,7 +12,7 @@ Implementation of Deep Embedded Validation for Domain Adpatation on [visda2017](
 
 在VisDA2017数据集，Maximum Classifier Discrepancy模型上实现DEV模型选择方法，
 
-DEV中的density ratio通过训练一个输出probability scalar的预判别器 来计算
+DEV中的density ratio通过训练一个输出probability scalar的域判别器来计算得到
 <div align=center>
     <img src="https://cdn.mathpix.com/snip/images/1S5h9K6rNdKFVFo0-jksSq4unHdsKVls2F_-KtSDMnA.original.fullsize.png" />
 </div>
