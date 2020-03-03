@@ -74,7 +74,7 @@ if __name__ == '__main__':
                         help='how many layers for classifier')
     opt = parse.parse_args()
     opt = post_config(opt)
-
+    functions.print_config(opt)
     #dataLoader
     transform = transforms.Compose([
             transforms.Resize(256),
