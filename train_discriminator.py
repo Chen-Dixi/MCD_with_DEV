@@ -1,7 +1,7 @@
 # MCD DEV
 from config import get_train_arguments
 from MCD.dataloader import PairedDatasetHelper
-from MCD.models import DomainDiscriminator
+from MCD.models import DomainDiscriminator, weights_init
 import MCD.functions as functions
 #dixitool
 from dixitool.pytorch.datasets import ImageList
@@ -38,7 +38,10 @@ def post_config(opt):
         opt.dir2save = "TrainedModel/netD"
         return opt
 
+best_acc = 0.0
 def test(netD, train_dataLoader,opt):
+    global best_acc
+
     accMetric = AccCalculatorForEveryClass(2)
     netD.eval()
     accMetric.reset()
@@ -55,14 +58,19 @@ def test(netD, train_dataLoader,opt):
 
             out = netD(src_data) # (batch,)
             
-            accMetric.update(out,src_target,binary_sigmoided=True)
+            accMetric.update(out,src_target,binary_sigmoided=False)
 
             out = netD(tgt_data)
-            accMetric.update(out,tgt_target,binary_sigmoided=True)
+            accMetric.update(out,tgt_target,binary_sigmoided=False)
 
     acc = accMetric.get()
-    print("判断准确率：{:.2f}%".format(acc))
 
+    print("判断准确率：{:.2f}%".format(acc))
+    is_best = acc > best_acc
+    if(is_best){
+        torch.save(netD.state_dict(), '%s/netD.pth' % (opt.dir2save))
+        best_acc = acc
+    }
 
 if __name__ == '__main__':
 
@@ -106,6 +114,7 @@ if __name__ == '__main__':
         test(netD, train_dataLoader,opt)
         print("Test Over")
         exit(0)
+    netD.apply(weights_init)
     netD.train()
     for epoch in range(1,opt.epochs+1):
         train_loss = 0.0
@@ -118,17 +127,17 @@ if __name__ == '__main__':
 
             optimizer.zero_grad()
 
-            out = netD(src_data).view(-1) # (batch,)
-            label = torch.full((src_data.size(0),), 1, device=opt.device)
-            err_validation = criterion(out, label)
+            out = netD(src_data) # (batch,)
+            #label = torch.full((src_data.size(0),), 1, device=opt.device)
+            err_validation = -out.mean()
             err_validation.backward()
 
             
 
-            out = netD(tgt_data).view(-1)
+            out = netD(tgt_data)
 
-            label = torch.full((tgt_data.size(0),), 0, device=opt.device)
-            err_test = criterion(out, label)
+            
+            err_test = output.mean()
             err_test.backward()
 
             optimizer.step()
@@ -138,7 +147,8 @@ if __name__ == '__main__':
 
         print("train loss: %f"%(train_loss))
 
-        torch.save(netD.state_dict(), '%s/netD.pth' % (opt.dir2save))
+        test(netD, train_dataLoader,opt)
+        
 
 
 
