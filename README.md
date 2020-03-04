@@ -4,7 +4,7 @@ Implementation of Deep Embedded Validation for Domain Adpatation on [visda2017](
 # Required
 - python3.6
 - pytorch 1.2.0
-- [dixitool](github.com/chen-dixi/dixitool)
+- [dixitool]
 - tqdm
 - numpy
 
@@ -32,5 +32,8 @@ bash train_discriminator.sh
 ```bash
 bash DEV.sh
 ```
+---
 
+
+[dixitool]:https://github.com/Chen-Dixi/dixitool
 
