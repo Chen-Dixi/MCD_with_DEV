@@ -103,7 +103,7 @@ if __name__ == '__main__':
     netG.load_state_dict(dicts[0])
     #分类器就使用F1
     F1.load_state_dict(dicts[1])
-    F2.module.load_state_dict(dicts[2])
+    F2.load_state_dict(dicts[2])
 
     ce_criterion = nn.CrossEntropyLoss(reduction='none')
     L = np.empty(0,dtype=np.float32)
